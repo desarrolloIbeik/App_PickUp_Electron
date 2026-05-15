@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Pick Up</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div class="logo">
+            <div class="logo-icon">🏨</div>
+            Pick Up Manager
+        </div>
+        <div class="sep"></div>
+        
+        <select id="selAnio">
+            <option>2024</option>
+            <option>2025</option>
+            <option selected>2026</option>
+        </select>
+        
+        <select id="selMes">
+            <option value="0">Enero</option>
+            <option value="1">Febrero</option>
+            <option value="2">Marzo</option>
+            <option value="3">Abril</option>
+            <option value="4">Mayo</option>
+            <option value="5">Junio</option>
+            <option value="6" selected>Julio</option>
+            <option value="7">Agosto</option>
+            <option value="8">Septiembre</option>
+            <option value="9">Octubre</option>
+            <option value="10">Noviembre</option>
+            <option value="11">Diciembre</option>
+        </select>
+
+        <div class="topbar-controls">
+            <div class="sep"></div>
+            <label style="font-size: 11px; color: var(--text2);">Fecha Informe:</label>
+            <input type="date" id="fechaInforme" class="btn" style="padding: 4px;">
+        </div>
+
+        <div class="topbar-actions">
+            <button class="btn" onclick="exportarCSV()">
+                <span class="btn-icon">⬇</span> Exportar
+            </button>
+            <button class="btn" id="btnPrint">
+                <span class="btn-icon">🖨</span> Imprimir
+            </button>
+            <button class="btn" id="btnPrices">
+                <span class="btn-icon">📊</span> Precios
+            </button>
+            <button class="btn primary" id="btnUpdate">
+                <span class="btn-icon">↻</span> Actualizar
+            </button>
+            <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar modo claro/oscuro">
+                <span id="themeIcon">☀️</span>
+            </div>
+        </div>
+    </div> <div class="global-nav">
+        <button class="nav-tab active" id="btnNavPickUp" onclick="cambiarModulo('pickup')">
+            <span class="nav-icon">🏨</span> Pick Up
+        </button>
+        <button class="nav-tab" id="btnNavRevenue" onclick="cambiarModulo('revenue')">
+            <span class="nav-icon">💰</span> Revenue
+        </button>
+    </div>
+
+    <div id="modulo-pickup">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+        <div class="kpi">
+            <div class="kpi-label">Habitaciones vendidas</div>
+            <div class="kpi-value" id="kpi-rooms">0</div>
+            <div class="kpi-sub" id="kpi-rooms-sub"></div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Ocupación</div>
+            <div class="kpi-value" id="kpi-occ">0,00%</div>
+            <div class="kpi-sub" id="kpi-occ-sub"></div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Precio Medio</div>
+            <div class="kpi-value" id="kpi-pm">0,00 €</div>
+            <div class="kpi-sub" id="kpi-prm-sub"></div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Revenue</div>
+            <div class="kpi-value" id="kpi-rev">0,00 €</div>
+            <div class="kpi-sub" id="kpi-Rvn-sub"></div>
+        </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+        <div class="table-panel">
+            
+            <!-- PANEL HEADER -->
+            <div class="panel-header" id="panelHeader">
+                <div class="panel-title" id="panelTitle">Gestión Pick Up</div>
+                <div class="tab-group" id="tabsPickUp">
+                    <button id="tabActual" class="tab active" onclick="toggleColumnas('actual')">Pick Up Actual</button>
+                    <button id="tabAnterior" class="tab active" onclick="toggleColumnas('anterior')">Pick Up Anterior</button>
+                    <button id="tabReal" class="tab active" onclick="toggleColumnas('real')">Situación Real</button>
+                    <button id="tabPresupuesto" class="tab" onclick="toggleColumnas('presupuesto')">Presupuesto</button>
+                    <button id="tabDiferencia" class="tab" onclick="toggleColumnas('diferencia')">Diferencia</button>
+                </div>
+                            <div class="panel-actions">
+                    <button class="btn" id="btnGraficos" onclick="toggleGraficos()">📈 Gráficos</button>
+                </div>
+            </div>
+
+            <!-- VISTA TABLA -->
+            <div id="vistaTabla" class="table-wrap">
+                <table id="mainTable">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="text-align:left; width:150px; background-color: #f8f9fa;">Día</th>
+                            <th rowspan="2" style="width:120px; background-color: #f8f9fa;">Eventos</th>
+                            <th colspan="5" id="headerActual" class="th-group col-actual">PICK UP ACTUAL</th>
+                            <th colspan="5" id="headerAnterior" class="th-group col-anterior">Pick UP AÑO ANT.</th>
+                            <!--<th colspan="5" id="headerAnterior" class="th-group col-anterior col-hidden">Pick UP AÑO ANT.</th>-->
+                            <th colspan="2" id="headerTarifa" class="th-group">APLICATIVO TARIFA</th>
+                            <th colspan="4" id="headerReal" class="th-group col-real">SITUACIÓN REAL</th>
+                            <!--<th colspan="4" id="headerReal" class="th-group col-real col-hidden">SITUACIÓN REAL</th>-->
+                            <th colspan="4" id="headerPresupuesto" class="th-group col-presupuesto col-hidden">PRESUPUESTO</th>
+                            <th colspan="4" id="headerDiferencia" class="th-group col-diferencia col-hidden">DIFERENCIA</th>
+                        </tr>
+                        <tr>
+                            <th class="col-actual">Hab. Lib.</th>
+                            <th class="col-actual">Pick Up</th>
+                            <th class="col-actual">P.U. Ant.</th>
+                            <th class="col-actual">P.M. P.U.</th>
+                            <th class="col-actual">Anul.</th>
+                            <th class="col-anterior ">Libres</th>
+                            <th class="col-anterior ">Pick Up</th>
+                            <th class="col-anterior ">P.U. Ant.</th>
+                            <th class="col-anterior ">P.M. P.U.</th>
+                            <th class="col-anterior ">Anul.</th>
+                            <th>Canales</th>
+                            <th>P.M. Real</th>
+                            <th class="col-real">Nº Hab.</th>
+                            <th class="col-real ">% Ocup.</th>
+                            <th class="col-real ">P. Medio</th>
+                            <th class="col-real ">Revenue</th>
+                            <th class="col-presupuesto col-hidden">Nº Hab.</th>
+                            <th class="col-presupuesto col-hidden">% Ocup.</th>
+                            <th class="col-presupuesto col-hidden">P. Medio</th>
+                            <th class="col-presupuesto col-hidden">Revenue</th>
+                            <th class="col-diferencia col-hidden">Nº Hab.</th>
+                            <th class="col-diferencia col-hidden">% Ocup.</th>
+                            <th class="col-diferencia col-hidden">P. Medio</th>
+                            <th class="col-diferencia col-hidden">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- VISTA GRÁFICOS -->
+            <div id="vistaGraficos" style="display:none; padding:20px; overflow:auto; flex:1;">
+                <div id="grafico-ocupacion"></div>
+                <div id="grafico-revenue"></div>
+                <div id="grafico-pickUp"></div>
+                <div style="display:flex; gap:24px; align-items:flex-start;">
+                    <div id="grafico-donut"></div>
+                    <div id="grafico-doblelinea" style="flex:1"></div>
+                </div>
+                <div id="grafico-heatmap"></div>
+            </div>
+
+
+            <!-- FOOTER SUMMARY -->
+            <div class="footer-summary">
+                <div class="fs-item">
+                    <div class="fs-label">Habitaciones</div>
+                    <div class="fs-row">
+                        <div><div class="fs-sublabel">Real</div><div class="fs-val real" id="total-hab-real">0</div></div>
+                        <div><div class="fs-sublabel">Presup.</div><div class="fs-val presup" id="total-hab-presup">0</div></div>
+                        <div><div class="fs-sublabel">Dif.</div><div class="fs-val diff" id="total-hab-dif">+0</div></div>
+                    </div>
+                </div>
+                <div class="fs-item">
+                    <div class="fs-label">% Ocupación</div>
+                    <div class="fs-row">
+                        <div><div class="fs-sublabel">Real</div><div class="fs-val real" id="total-occ-real">0,00%</div></div>
+                        <div><div class="fs-sublabel">Presup.</div><div class="fs-val presup" id="total-occ-presup">0,00%</div></div>
+                        <div><div class="fs-sublabel">Dif.</div><div class="fs-val diff" id="total-occ-dif">+0,00%</div></div>
+                    </div>
+                </div>
+                <div class="fs-item">
+                    <div class="fs-label">Precio Medio</div>
+                    <div class="fs-row">
+                        <div><div class="fs-sublabel">Real</div><div class="fs-val real" id="total-pm-real">0,00€</div></div>
+                        <div><div class="fs-sublabel">Presup.</div><div class="fs-val presup" id="total-pm-presup">0,00€</div></div>
+                        <div><div class="fs-sublabel">Dif.</div><div class="fs-val diff" id="total-pm-dif">+0€</div></div>
+                    </div>
+                </div>
+                <div class="fs-item">
+                    <div class="fs-label">Revenue</div>
+                    <div class="fs-row">
+                        <div><div class="fs-sublabel">Real</div><div class="fs-val real" id="total-rev-real">0,00€</div></div>
+                        <div><div class="fs-sublabel">Presup.</div><div class="fs-val presup" id="total-rev-presup">0,00€</div></div>
+                        <div><div class="fs-sublabel">Dif.</div><div class="fs-val diff" id="total-rev-dif">+0€</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+<div id="modulo-revenue" style="display: none;">
+    <div class="content">
+        <div class="table-panel">
+            <div class="panel-header">
+                <div class="panel-title">Análisis de Revenue</div>
+                <div class="tab-group" id="tabsRevenue">
+                    <button id="tabRevFinanciero" class="tab active" onclick="cambiarVistaRevenue('financiero')"> Financiero</button>
+                    <button id="tabRevDepartamentos" class="tab" onclick="cambiarVistaRevenue('departamentos')"> Departamentos</button>
+                    <button id="tabRevTotal" class="tab" onclick="cambiarVistaRevenue('total')"> Total</button>
+                </div>
+            </div>
+
+            <!-- SUB-VISTA: FINANCIERO -->
+            <div id="vistaRevFinanciero" class="table-wrap" style="overflow: auto;">
+                <table id="tableRevFinanciero" style="width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0;">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="text-align:left; width:80px;">Día</th>
+                            <th rowspan="2" style="width:60px;">Hab.</th>
+                            <th rowspan="2" style="width:70px;">Ocup%</th>
+                            <th colspan="3" class="th-group">ADR</th>
+                            <th colspan="3" class="th-group">RevPAR</th>
+                            <th colspan="3" class="th-group">ALOJAMIENTO</th>
+                            <th colspan="3" class="th-group">TRevPAR</th>
+                            <th colspan="3" class="th-group">PRODUCCIÓN TOTAL</th>
+                        </tr>
+                        <tr>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyRevFinanciero"></tbody>
+                    <tfoot id="tfootRevFinanciero">
+                        <tr class="tfoot-totales">
+                            <td colspan="3" style="text-align:left; font-weight:600;">TOTALES MES</td>
+                            <td class="td-num" id="tfoot-fin-adr-real">—</td>
+                            <td class="td-num" id="tfoot-fin-adr-ppto">—</td>
+                            <td class="td-num" id="tfoot-fin-adr-dif">—</td>
+                            <td class="td-num" id="tfoot-fin-revpar-real">—</td>
+                            <td class="td-num" id="tfoot-fin-revpar-ppto">—</td>
+                            <td class="td-num" id="tfoot-fin-revpar-dif">—</td>
+                            <td class="td-num" id="tfoot-fin-aloj-real">—</td>
+                            <td class="td-num" id="tfoot-fin-aloj-ppto">—</td>
+                            <td class="td-num" id="tfoot-fin-aloj-dif">—</td>
+                            <td class="td-num" id="tfoot-fin-trevpar-real">—</td>
+                            <td class="td-num" id="tfoot-fin-trevpar-ppto">—</td>
+                            <td class="td-num" id="tfoot-fin-trevpar-dif">—</td>
+                            <td class="td-num" id="tfoot-fin-prod-real">—</td>
+                            <td class="td-num" id="tfoot-fin-prod-ppto">—</td>
+                            <td class="td-num" id="tfoot-fin-prod-dif">—</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- SUB-VISTA: DEPARTAMENTOS -->
+            <div id="vistaRevDepartamentos" class="table-wrap" style="display:none; overflow: auto;">
+                <table id="tableRevDepartamentos" style="width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left; width:80px;">Día</th>
+                            <th class="th-group">Restaurante</th>
+                            <th class="th-group">Desayunos</th>
+                            <th class="th-group">Menús / Banquetes</th>
+                            <th class="th-group">Pensiones</th>
+                            <th class="th-group">Room Service</th>
+                            <th class="th-group">Minibar</th>
+                            <th class="th-group">SPA</th>
+                            <th class="th-group">Golf</th>
+                            <th class="th-group">Salones</th>
+                            <th class="th-group">Lavandería</th>
+                            <th class="th-group">Tienda</th>
+                            <th class="th-group">Eventos</th>
+                            <th class="th-group">Comunicaciones</th>
+                            <th class="th-group">Bonos Iberik</th>
+                            <th class="th-group">Bonos OCA</th>
+                            <th class="th-group">Varios</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyRevDepartamentos"></tbody>
+                    <tfoot id="tfootRevDepartamentos">
+                        <tr class="tfoot-totales">
+                            <td style="text-align:left; font-weight:600;">TOTALES MES</td>
+                            <td class="td-num" id="tfoot-dpto-restaurante">—</td>
+                            <td class="td-num" id="tfoot-dpto-desayunos">—</td>
+                            <td class="td-num" id="tfoot-dpto-menus">—</td>
+                            <td class="td-num" id="tfoot-dpto-pensiones">—</td>
+                            <td class="td-num" id="tfoot-dpto-roomservice">—</td>
+                            <td class="td-num" id="tfoot-dpto-minibar">—</td>
+                            <td class="td-num" id="tfoot-dpto-spa">—</td>
+                            <td class="td-num" id="tfoot-dpto-golf">—</td>
+                            <td class="td-num" id="tfoot-dpto-salones">—</td>
+                            <td class="td-num" id="tfoot-dpto-lavanderia">—</td>
+                            <td class="td-num" id="tfoot-dpto-tienda">—</td>
+                            <td class="td-num" id="tfoot-dpto-eventos">—</td>
+                            <td class="td-num" id="tfoot-dpto-comunicaciones">—</td>
+                            <td class="td-num" id="tfoot-dpto-bonosiberik">—</td>
+                            <td class="td-num" id="tfoot-dpto-bonosoca">—</td>
+                            <td class="td-num" id="tfoot-dpto-varios">—</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- SUB-VISTA: TOTAL -->
+            <div id="vistaRevTotal" class="table-wrap" style="display:none; overflow: auto;">
+                <table id="tableRevTotal" style="width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0;">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="text-align:left; width:80px;">Día</th>
+                            <th colspan="3" class="th-group">Alojamiento</th>
+                            <th colspan="3" class="th-group">F&amp;B</th>
+                            <th colspan="3" class="th-group">Otros Dpto.</th>
+                            <th colspan="3" class="th-group">Abonos / Anticipos</th>
+                            <th colspan="3" class="th-group">Producción Total</th>
+                            <th colspan="3" class="th-group">TRevPAR</th>
+                        </tr>
+                        <tr>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                            <th>Real</th><th>Ppto.</th><th>Dif.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyRevTotal"></tbody>
+                    <tfoot id="tfootRevTotal">
+                        <tr class="tfoot-totales">
+                            <td style="text-align:left; font-weight:600;">TOTALES MES</td>
+                            <td class="td-num" id="tfoot-tot-aloj-real">—</td>
+                            <td class="td-num" id="tfoot-tot-aloj-ppto">—</td>
+                            <td class="td-num" id="tfoot-tot-aloj-dif">—</td>
+                            <td class="td-num" id="tfoot-tot-fnb-real">—</td>
+                            <td class="td-num" id="tfoot-tot-fnb-ppto">—</td>
+                            <td class="td-num" id="tfoot-tot-fnb-dif">—</td>
+                            <td class="td-num" id="tfoot-tot-otros-real">—</td>
+                            <td class="td-num" id="tfoot-tot-otros-ppto">—</td>
+                            <td class="td-num" id="tfoot-tot-otros-dif">—</td>
+                            <td class="td-num" id="tfoot-tot-abonos-real">—</td>
+                            <td class="td-num" id="tfoot-tot-abonos-ppto">—</td>
+                            <td class="td-num" id="tfoot-tot-abonos-dif">—</td>
+                            <td class="td-num" id="tfoot-tot-prod-real">—</td>
+                            <td class="td-num" id="tfoot-tot-prod-ppto">—</td>
+                            <td class="td-num" id="tfoot-tot-prod-dif">—</td>
+                            <td class="td-num" id="tfoot-tot-trevpar-real">—</td>
+                            <td class="td-num" id="tfoot-tot-trevpar-ppto">—</td>
+                            <td class="td-num" id="tfoot-tot-trevpar-dif">—</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+    <script src="node_modules/d3/dist/d3.min.js"></script>
+    <script src="renderer.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+<!--             ### KPIs ### 
+Habitaciones vendidas  = suma de pickUp de todos los días del mes
+Ocupación              = (habitaciones vendidas / (TOTAL_ROOMS × días del mes)) × 100
+Precio Medio           = suma de pmReal de días con datos / número de días con datos
+Revenue                = suma de (realTotal × pmReal) de todos los días
+RevPAR                 = Revenue / (TOTAL_ROOMS × días del mes)
+-->
